@@ -1,7 +1,7 @@
 
 EXEC   = L-VelHalo-MXXL
 
-OBJS   = main.o mymalloc.o read_parameters.o allvars.o io.o smooth.o velocity_field.o mxxl_io.o 
+OBJS   = main.o mymalloc.o read_parameters.o allvars.o io.o smooth.o velocity_field.o mxxl_io.o statistics/stats_utils.o
 
 INCL   = allvars.h  proto.h  Makefile
 
@@ -289,6 +289,8 @@ $(EXEC): $(OBJS)
 
 $(OBJS): $(INCL) 
 
+statistics/%.o: statistics/%.c
+	$(CC) $(CFLAGS) -c $< -o $@
 
 clean:
 	rm -f $(OBJS) $(EXEC)

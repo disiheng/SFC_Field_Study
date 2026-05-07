@@ -4,8 +4,7 @@
 
 #include "allvars.h"
 
-double density_statistics(fftw_real *grid);
-double log_density( float *grid);
+
 void read_parameter_file(char *fname);
 void velocity_field(int dim);
 void save_grids(int dim);
