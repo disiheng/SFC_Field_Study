@@ -1,0 +1,61 @@
+# Makefile for the Light Cone codes
+#
+# Compiler options are set in the file make-options.$(HOST)
+#
+
+
+#CFLAGS += -DEXTRA
+EXEC   = Power.exe
+
+INCL   = Makefile make.options allvars.h
+
+#OPT += -DPARTICLE_TYPE=2
+OPT += -DCIC
+
+OPT += -DDM
+OPT += -DHDF5_SNAP
+
+#OPT += -DBISPECTRUM
+#OPT += -DSUBSAMPLE
+#OPT += -DDENSITY_DUMP
+#OPT += -DDENSITY_LOAD
+#OPT += -DZ_SPACE
+#OPT += -DPHOTO_SPACE
+#OPT += -DCROSS
+#OPT += -DPRELOAD
+#OPT += -DRATIO
+#OPT += -DCORREL
+#OPT += -DDIVERGENCE
+#OPT += -DHOD
+#OPT += -DGAL_SHUFFLE
+
+OPT +=  -DDOUBLEPRECISION_FFTW
+#OPT +=  -DDOUBLEPRECISION
+
+#---------------------------------------------------------
+
+include make.options
+
+OPTIONS = $(OPTIMIZE) $(OPT) -DCOMPILETIMESETTINGS=\""$(OPT)"\"
+CFLAGS = $(OPTIONS) $(GSL_INCL) $(FFTW_INCL) $(HDF5INCL)
+LIBS   = -lm $(HDF5LIB) -lhdf5 -lz -g $(MPICHLIB) $(GSL_LIBS) -lgsl -lgslcblas $(FFTW_LIBS)
+#---------------------------------------------------------
+
+OBJS   =  main_power.o power.o correl.o parallel_sort.o density.o divergence.o hod.o \
+          gadget.o utils.o byte_swap.o mymalloc.o \
+          io.o allvars.o 
+
+$(EXEC): $(OBJS) $(INCL)
+	$(CC) $(OPTIONS) $(OBJS) $(LIBS) $(RLIBS) -o $(EXEC)
+
+$(OBJS): $(INCL)
+
+#---------------------------------------------------------
+
+
+clean:
+	rm -f *.o *.exe core
+
+#---------------------------------------------------------
+
+

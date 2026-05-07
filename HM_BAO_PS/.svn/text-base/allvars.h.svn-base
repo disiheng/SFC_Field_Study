@@ -1,0 +1,34 @@
+
+#define NMAX     6000000
+#define NMAXRDM  100000
+#define NCELLMAX 10000
+#define NMAXCHAR 255
+#define NBINMAX  100
+#define Pi       3.14159
+#define D2R (acos(-1.0)/180.0)
+#define MIN(a,b) ((a)<(b)?(a):(b))
+#define MAX(a,b) ((a)<(b)?(b):(a))
+#define SQR(a) ((a)*(a))
+#define CUB(a) ((a)*(a)*(a))
+
+#ifndef DEBUG
+  #define DEBUG 0
+#endif
+
+int ThisTask, PTask, NTasks, NProcRead;
+float MinMag, MaxMag;
+int  NRegrid, NFilesDM, NFilesGr, NGens, NNear,NBins, NTimesHal;
+int  Geometry, AssgnScheme, npow, SimFormat;
+int  flag_write_df, flag_redshift,flag_hdf5, flag_log, flag_periodic, flag_fits, flag_mpi;
+int iseed, Ngrid2, Num;
+long long TotNumPart;
+double Hubble, ExpFactor, NCell,ToMpc,Center, kTMin, ML1,ML2;
+double CellSize;
+char  OutFile[NMAXCHAR], SimFile[NMAXCHAR], SnapBase[NMAXCHAR], OutFile[NMAXCHAR];
+double MinConc, MaxConc,Redshift, Omega_m, DiluteFactor, minScale, maxScale;
+typedef int int4byte;
+double *MyBoxSize;
+
+int *Send_offset, *Send_count, *Recv_count, *Recv_offset, *Sendcount;
+
+

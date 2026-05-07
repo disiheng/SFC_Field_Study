@@ -1,0 +1,11 @@
+
+#ifndef POWER_H
+#define POWER_H
+
+#define POWERSPEC_FOLDFAC 32 
+
+#include "../density/density.h"
+
+void power( char fname[], Grid grid, int flag, float box); 
+
+#endif

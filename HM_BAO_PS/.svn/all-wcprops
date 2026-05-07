@@ -1,0 +1,41 @@
+K 25
+svn:wc:ra_dav:version-url
+V 59
+/svn/cosmo-group/!svn/ver/13924/reangulo/SimUtils/src/power
+END
+main_power.c
+K 25
+svn:wc:ra_dav:version-url
+V 72
+/svn/cosmo-group/!svn/ver/13570/reangulo/SimUtils/src/power/main_power.c
+END
+power.h
+K 25
+svn:wc:ra_dav:version-url
+V 67
+/svn/cosmo-group/!svn/ver/11176/reangulo/SimUtils/src/power/power.h
+END
+allvars.h
+K 25
+svn:wc:ra_dav:version-url
+V 69
+/svn/cosmo-group/!svn/ver/13570/reangulo/SimUtils/src/power/allvars.h
+END
+Makefile
+K 25
+svn:wc:ra_dav:version-url
+V 68
+/svn/cosmo-group/!svn/ver/13570/reangulo/SimUtils/src/power/Makefile
+END
+power.c
+K 25
+svn:wc:ra_dav:version-url
+V 67
+/svn/cosmo-group/!svn/ver/13924/reangulo/SimUtils/src/power/power.c
+END
+power_back.c
+K 25
+svn:wc:ra_dav:version-url
+V 71
+/svn/cosmo-group/!svn/ver/8837/reangulo/SimUtils/src/power/power_back.c
+END

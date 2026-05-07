@@ -1,0 +1,41 @@
+# Makefile for the Light Cone codes
+#
+# Compiler options are set in the file make-options.$(HOST)
+#
+
+#---------------------------------------------------------
+
+include ../make.options
+
+#---------------------------------------------------------
+
+#CFLAGS += -DEXTRA
+EXEC   = Power.exe
+
+INCL   =  Makefile ../make.options
+
+#CFLAGS += -DPARTICLE_TYPE=2
+CFLAGS += -DCIC
+
+
+OBJS   =  main_power.o power.o parallel_sort.o ../density/density.o \
+          ../utils/gadget.o ../utils/utils.o ../utils/byte_swap.o ../utils/mymalloc.o
+
+Correl: $(OBJS) $(INCL)
+	$(CC) $(CFLAGS) $(OBJS) $(LIBS) -o $(EXEC)
+
+.o.c:
+	$(CC) $(CFLAGS) -c $*.c
+
+
+$(OBJS): $(INCL)
+
+#---------------------------------------------------------
+
+
+clean:
+	rm -f *.o *.exe core
+
+#---------------------------------------------------------
+
+

@@ -1,0 +1,8 @@
+*.o
+*.exe
+*.out
+.DS_Store
+.ipynb_checkpoints/
+*.tar
+*.swp
+*.swo

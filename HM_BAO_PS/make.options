@@ -1,0 +1,80 @@
+#
+# Compiler options for the sorce codes.
+# Should work on Oberon.
+
+#MACHINE = "Ubuntu"
+#MACHINE="JSC"
+#MACHINE="COSM"
+MACHINE="ShuGuang"
+
+ifeq ($(MACHINE),"Ubuntu")
+CC       =  mpiicc -Wall
+OPTIMIZE = -g -O3 -W 
+GSL_INCL = -I/opt/gsl-1.16/include
+GSL_LIBS = -L/opt/gsl-1.16/lib -Xlinker -R -Xlinker /opt/gsl-1.16/lib
+FFTW_INCL= -I/opt/fftw-2.1.5/include 
+FFTW_LIB = -L/opt/fftw-2.1.5/lib #-Xlinker -R -Xlinker /home/liming/program/fftw2/lib
+ifeq (DOUBLEPRECISION_FFTW,$(findstring DOUBLEPRECISION_FFTW,$(OPT)))
+  FFTW_LIBS = $(FFTW_LIB) -ldrfftw_mpi -ldfftw_mpi -ldrfftw -ldfftw
+else
+  FFTW_LIBS = $(FFTW_LIB) -lsrfftw_mpi -lsfftw_mpi -lsrfftw -lsfftw
+endif
+MPICHLIB = 
+HDF5INCL =
+HDF5LIB  =
+endif
+
+ifeq ($(MACHINE),"COSM")
+CC       =  mpicc
+OPTIMIZE =  -g -O3 -W #-O3 -Wall -m64 -wd981 -wd2259 -wd1572 -ipo
+GSL_INCL =  -I$(GSL_HOME)/include
+GSL_LIBS =  -L$(GSL_HOME)/lib -Xlinker -R -Xlinker $(GSL_HOME)/lib -lgsl -lgslcblas 
+FFTW_INCL=  -I$(FFTW_HOME)/include
+FFTW_LIB =  -L$(FFTW_HOME)/lib 
+ifeq (DOUBLEPRECISION_FFTW,$(findstring DOUBLEPRECISION_FFTW,$(OPT)))
+  FFTW_LIBS = $(FFTW_LIB) -ldrfftw_mpi -ldfftw_mpi -ldrfftw -ldfftw
+else
+  FFTW_LIBS = $(FFTW_LIB) -lsrfftw_mpi -lsfftw_mpi -lsrfftw -lsfftw
+endif
+MPICHLIB =
+HDF5INCL =
+HDF5LIB  =
+endif
+
+ifeq ($(MACHINE),"JSC")
+CC       =  mpicc   # sets the C-compiler
+#CC       = /opt/parastation/mpi2-intel-mt/bin/mpicc
+OPTIMIZE =  -g -O3 -Wall -sox
+ifeq (OPENMP,$(findstring OPENMP,$(OPT)))
+OPTIMIZE +=  -openmp
+endif
+GSL_INCL = -I/lustre/jwork1/vsk021/libs/include/gsl/
+GSL_LIBS = -L/lustre/jwork1/vsk021/libs/lib -Xlinker -R -Xlinker /lustre/jwork1/vsk021/libs/lib -lgsl -lgslcblas
+FFTW_INCL= -I/lustre/jwork1/vsk021/libs/include
+FFTW_LIBS= -L/lustre/jwork1/vsk021/libs/lib -Xlinker -R -Xlinker /lustre/jwork1/vsk021/libs/lib -lsrfftw_mpi -lsfftw_mpi -lsrfftw -lsfftw -lsrfftw_threads -lsfftw_threads 
+MPICHLIB = -L/opt/parastation/mpi2-intel/lib/ -Xlinker -R -Xlinker /opt/parastation/mpi2-intel/lib/ -lmpi
+MPICHINC = -I/opt/parastation/mpi2-intel/include/
+endif
+
+
+ifeq ($(MACHINE),"ShuGuang")
+CC       =  mpicc   # sets the C-compiler
+OPTIMIZE =  -g -O3 -Wall #-sox
+ifeq (OPENMP,$(findstring OPENMP,$(OPT)))
+OPTIMIZE +=  #-openmp
+endif
+GSL_INCL = -I/public/home/liming/program/gsl/gnu/include
+GSL_LIBS = -L/public/home/liming/program/gsl/gnu/lib -Xlinker -R -Xlinker /public/home/liming/program/gsl/gnu/lib -lgsl -lgslcblas
+FFTW_INCL= -I/public/home/liming/program/fftw2/hpcx/2.7/gnu/include
+FFTW_LIB = -L/public/home/liming/program/fftw2/hpcx/2.7/gnu/lib -Xlinker -R -Xlinker /public/home/liming/program/fftw2/hpcx/2.7/gnu/lib
+ifeq (DOUBLEPRECISION_FFTW,$(findstring DOUBLEPRECISION_FFTW,$(OPT)))
+  FFTW_LIBS = $(FFTW_LIB) -ldrfftw_mpi -ldfftw_mpi -ldrfftw -ldfftw
+else
+  FFTW_LIBS = $(FFTW_LIB) -lsrfftw_mpi -lsfftw_mpi -lsrfftw -lsfftw
+endif
+MPICHLIB =
+HDF5INCL = -I/opt/hpc/software/mathlib/hdf5/1.8.20/gcc/include
+HDF5LIB  = -L/opt/hpc/software/mathlib/hdf5/1.8.20/gcc/lib     -Xlinker -R -Xlinker  /opt/hpc/software/mathlib/hdf5/1.8.20/gcc/lib
+endif
+
+
