@@ -1,6 +1,11 @@
 EXEC   = L-VelHalo-MXXL
 
-OBJS   = main.o mymalloc.o read_parameters.o allvars.o io.o smooth.o velocity_field.o mxxl_io.o statistics/stats_utils.o
+OBJS   = main.o mymalloc.o read_parameters.o allvars.o io.o smooth.o \
+         velocity_field.o mxxl_io.o field_assign.o \
+         statistics/stats_utils.o statistics/bispectrum_fft.o \
+         statistics/bispectrum_wavelet.o statistics/three_pcf.o \
+         mracs/particle_io.o mracs/sfc.o mracs/wavelet.o \
+         mracs/kernel.o mracs/mra_grid.o
 
 INCL   = allvars.h  proto.h  Makefile
 
@@ -47,7 +52,7 @@ endif
 
 LIBS   =  $(GSL_LIBS) -lgsl -lgslcblas $(FFTW_LIB) -lm -g
 
-CFLAGS = $(OPTIMIZE) $(OPTIONS) $(GSL_INCL) $(FFTW_INCL)
+CFLAGS = $(OPTIMIZE) $(OPTIONS) $(GSL_INCL) $(FFTW_INCL) -I.
 
 $(EXEC): $(OBJS)
 	$(CC) $(OPTIONS) $(OPTIMIZE) $(OBJS) $(LIBS)   -o  $(EXEC)
@@ -55,6 +60,9 @@ $(EXEC): $(OBJS)
 $(OBJS): $(INCL)
 
 statistics/%.o: statistics/%.c
+	$(CC) $(CFLAGS) -c $< -o $@
+
+mracs/%.o: mracs/%.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
 clean:
