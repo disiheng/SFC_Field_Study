@@ -19,7 +19,9 @@ double Time, Omega0;
 
 int NTask, ThisTask, PTask, rep;
 
-int fftsize, maxfftsize;
+ptrdiff_t fftsize, maxfftsize;
+
+ptrdiff_t local_n0, local_0_start, local_n1, local_1_start;
 
 int NumFilesWrittenInParallel;
 int CYCLES;
@@ -38,7 +40,7 @@ size_t HighMarkBytes;
 float HighMarkBytes_Step;
 size_t FreeBytes;
 
-rfftwnd_mpi_plan fft_forward_plan, fft_inverse_plan;
+fftw_plan fft_forward_plan, fft_inverse_plan;
 int *first_slab_of_task, *slabs_per_task, *slab_to_task;
 int *first_slab_file, *nslabs_file;
 fftw_complex *fft_Grid, *fft_sGrid, *fft_Vel;

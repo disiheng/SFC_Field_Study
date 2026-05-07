@@ -18,16 +18,6 @@
 #include "statistics/bispectrum_wavelet.h"
 #include "statistics/three_pcf.h"
 
-#ifdef NOTYPEPREFIX_FFTW
-#include      <rfftw_mpi.h>
-#else
-#ifdef DOUBLEPRECISION_FFTW
-#include     <drfftw_mpi.h> /* double precision FFTW */
-#else
-#include     <srfftw_mpi.h>
-#endif
-#endif
-
 int main(int argc, char **argv)
 {
   MPI_Init(&argc, &argv);
@@ -235,7 +225,7 @@ int main(int argc, char **argv)
   fft_Grid = (fftw_complex *) &Grid[0];
   if(ThisTask == 0)
       printf("fft forward \n");
-  rfftwnd_mpi(fft_forward_plan, 1, Grid, workspace, FFTW_TRANSPOSED_ORDER);
+  fftw_execute(fft_forward_plan);
 
   for (rep=0; rep<=0; rep++)
   {  

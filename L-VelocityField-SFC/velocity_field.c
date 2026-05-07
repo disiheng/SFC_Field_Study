@@ -18,39 +18,42 @@
 
 #define WORKSIZE 100000
 
-#ifdef NOTYPEPREFIX_FFTW
-#include      <rfftw_mpi.h>
-#else
-#ifdef DOUBLEPRECISION_FFTW
-#include     <drfftw_mpi.h> /* double precision FFTW */
-#else
-#include     <srfftw_mpi.h>
-#endif
-#endif
-
-//#define  Ndim2 (2*(Ndim/2 + 1))
+/* FFTW3 MPI: fftw3-mpi.h is included via allvars.h */
 
 
 void init_grid(void)
 {
   int i;
   int *slab_to_task_local;
+  ptrdiff_t alloc_local;
 
- 
-  /* Workspace out the ranges on each processor. */
-  fft_forward_plan = rfftw3d_mpi_create_plan(MPI_COMM_WORLD, Ndim, Ndim, Ndim,
-                         FFTW_REAL_TO_COMPLEX,
-                         FFTW_ESTIMATE | FFTW_IN_PLACE | FFTW_THREADSAFE);
+  /* FFTW3 MPI: create plans for 3D real-to-complex and complex-to-real.
+   * Use transposed output for efficient MPI data distribution.
+   * In-place: pass same pointer for in and out (FFTW3 handles it). */
+  fft_forward_plan = fftw_mpi_plan_dft_r2c_3d(
+      Ndim, Ndim, Ndim,
+      (double *)Grid, (fftw_complex *)Grid,
+      MPI_COMM_WORLD, FFTW_ESTIMATE);
 
-  fft_inverse_plan = rfftw3d_mpi_create_plan(MPI_COMM_WORLD, Ndim, Ndim, Ndim,
-                         FFTW_COMPLEX_TO_REAL,
-                         FFTW_ESTIMATE | FFTW_IN_PLACE | FFTW_THREADSAFE);
+  fft_inverse_plan = fftw_mpi_plan_dft_c2r_3d(
+      Ndim, Ndim, Ndim,
+      (fftw_complex *)Grid, (double *)Grid,
+      MPI_COMM_WORLD, FFTW_ESTIMATE);
 
-  rfftwnd_mpi_local_sizes(fft_forward_plan, &nslab_x, &slabstart_x, &nslab_y, &slabstart_y, &fftsize);
+  /* Get local data distribution */
+  alloc_local = fftw_mpi_local_size_3d_transposed(
+      Ndim, Ndim, Ndim, MPI_COMM_WORLD,
+      &local_n0, &local_0_start, &local_n1, &local_1_start);
+
+  nslab_x = (int)local_n0;
+  slabstart_x = (int)local_0_start;
+  nslab_y = (int)local_n1;
+  slabstart_y = (int)local_1_start;
+  fftsize = alloc_local;
 
   if(ThisTask == 0)
-    printf("fftsize=%d nslab_y=%d slabstart_y=%d, nslab_y=%d slabstart_y=%d \n", fftsize, nslab_x,
-       slabstart_x, nslab_y, slabstart_y);
+    printf("fftsize=%td nslab_x=%d slabstart_x=%d nslab_y=%d slabstart_y=%d\n",
+           fftsize, nslab_x, slabstart_x, nslab_y, slabstart_y);
 
   slab_to_task = (int *) mymalloc("slab_to_task", Ndim * sizeof(int));
   slab_to_task_local = (int *) mymalloc("slab_to_task_local", Ndim * sizeof(int));
@@ -74,20 +77,32 @@ void init_grid(void)
   MPI_Allgather(&slabstart_x, 1, MPI_INT, first_slab_of_task, 1, MPI_INT, MPI_COMM_WORLD);
 
   to_slab_fac = (float) (Ndim / BoxSize);
-  MPI_Allreduce(&fftsize, &maxfftsize, 1, MPI_INT, MPI_MAX, MPI_COMM_WORLD);
+  {
+    ptrdiff_t local_max = fftsize;
+    MPI_Allreduce(&local_max, &maxfftsize, 1, MPI_LONG_LONG, MPI_MAX, MPI_COMM_WORLD);
+  }
+
+  /* Allocate Grid buffer: must hold both real input (local_n0*Ndim*Ndim doubles)
+   * and complex output (fftsize * 2 doubles, since fftsz=alloc_local in fftw_complex units).
+   * In FFTW3 MPI, no external workspace is needed (handled internally). */
+  {
+    size_t real_bytes  = (size_t)local_n0 * (size_t)Ndim * (size_t)Ndim * sizeof(double);
+    size_t cplx_bytes  = (size_t)alloc_local * 2 * sizeof(double);
+    size_t grid_bytes  = (real_bytes > cplx_bytes) ? real_bytes : cplx_bytes;
 
 #ifdef GEN_HALOFIELD
-  Grid = (fftw_real *) mymalloc("Grid", Ndim * Ndim * nslab_x * sizeof(fftw_real));
+    Grid = (fftw_real *) mymalloc("Grid", grid_bytes);
 #else
-  workspace = (fftw_real *) mymalloc("workspace", maxfftsize * sizeof(fftw_real));
-  Grid = (fftw_real *) mymalloc("Grid", maxfftsize * sizeof(fftw_real));
+    Grid = (fftw_real *) mymalloc("Grid", grid_bytes);
+    workspace = (fftw_real *) mymalloc("workspace", grid_bytes);
 #endif
+  }
 }
 
 void clean_grid()
 {
-  rfftwnd_mpi_destroy_plan(fft_forward_plan);
-  rfftwnd_mpi_destroy_plan(fft_inverse_plan);
+  fftw_destroy_plan(fft_forward_plan);
+  fftw_destroy_plan(fft_inverse_plan);
 
 #ifdef GEN_HALOFIELD
   myfree(Grid);
@@ -139,7 +154,7 @@ void velocity_field(int dim)
       printf("Normalization: %g\n",fac);
     }
 
-  Vel = (fftw_real *) mymalloc("Vel", maxfftsize * sizeof(fftw_real));
+  Vel = (fftw_real *) mymalloc("Vel", (size_t)fftsize * sizeof(fftw_complex));
 
   report_memory_usage(&HighMark_run, "VEL_RECON");
 
@@ -172,7 +187,7 @@ void velocity_field(int dim)
           k2 = kx * kx + ky * ky + kz * kz;
 
 		  if(k2 == 0)
-			fft_Vel[0].re = fft_Vel[0].im = 0.0;
+			fft_Vel[0][0] = fft_Vel[0][1] = 0.0;
           if(k2 > 0)
           {
               //do deconvolution
@@ -203,16 +218,16 @@ void velocity_field(int dim)
 
 			  // v_x(k) = -i (H*f) * k_x / |k|^2 * delta(k)
 			  if (dim == 0){
-				fft_Vel[ip].re = - div.im * kx / k2 * fac2 * fac * win;
-				fft_Vel[ip].im =   div.re * kx / k2 * fac2 * fac * win;
+				fft_Vel[ip][0] = - div[1] * kx / k2 * fac2 * fac * win;
+				fft_Vel[ip][1] =   div[0] * kx / k2 * fac2 * fac * win;
 			  }
 			  if (dim == 1){
-				fft_Vel[ip].re = - div.im * ky / k2 * fac2 * fac * win;
-				fft_Vel[ip].im =   div.re * ky / k2 * fac2 * fac * win;
+				fft_Vel[ip][0] = - div[1] * ky / k2 * fac2 * fac * win;
+				fft_Vel[ip][1] =   div[0] * ky / k2 * fac2 * fac * win;
 			  }
 			  if (dim == 2){
-				fft_Vel[ip].re = - div.im * kz / k2 * fac2 * fac * win;
-				fft_Vel[ip].im =   div.re * kz / k2 * fac2 * fac * win;
+				fft_Vel[ip][0] = - div[1] * kz / k2 * fac2 * fac * win;
+				fft_Vel[ip][1] =   div[0] * kz / k2 * fac2 * fac * win;
 			  }
 		  }
    }
@@ -223,7 +238,7 @@ void velocity_field(int dim)
 
   if(ThisTask == 0)
       printf("FFT backwards\n");
-  rfftwnd_mpi(fft_inverse_plan, 1, Vel, workspace, FFTW_TRANSPOSED_ORDER);
+  fftw_execute(fft_inverse_plan);
 
 }
 

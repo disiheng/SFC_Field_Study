@@ -18,17 +18,6 @@
 
 #define WORKSIZE 100000
 
-#ifdef NOTYPEPREFIX_FFTW
-#include      <rfftw_mpi.h>
-#else
-#ifdef DOUBLEPRECISION_FFTW
-#include     <drfftw_mpi.h> /* double precision FFTW */
-#else
-#include     <srfftw_mpi.h>
-#endif
-#endif
-
-//#define  Ndim2 (2*(Ndim/2 + 1))
 
 void smooth(void)
 {
@@ -56,9 +45,15 @@ void smooth(void)
       fflush(stdout);
     }
 
-  sGrid = (fftw_real *) mymalloc("sGrid", maxfftsize * sizeof(fftw_real));
+  sGrid = (fftw_real *) mymalloc("sGrid", (size_t)fftsize * sizeof(fftw_complex));
 
   report_memory_usage(&HighMark_run, "SMOOTH");
+
+  /* Create local C2R plan for sGrid (FFTW3 plans are buffer-specific) */
+  fftw_plan local_inv_plan = fftw_mpi_plan_dft_c2r_3d(
+      (ptrdiff_t)Ndim, (ptrdiff_t)Ndim, (ptrdiff_t)Ndim,
+      (fftw_complex *)sGrid, (double *)sGrid,
+      MPI_COMM_WORLD, FFTW_ESTIMATE);
 
   asmth2 = Smoothing;
   asmth2 *= asmth2;
@@ -93,8 +88,8 @@ void smooth(void)
 		  win = exp(-k2 * asmth2 / 2);
 		  Norm_local += win; 
 
-		  fft_sGrid[ip].re = fft_Grid[ip].re * win * fac2 / fac;
-		  fft_sGrid[ip].im = fft_Grid[ip].im * win * fac2 / fac;
+		  fft_sGrid[ip][0] = fft_Grid[ip][0] * win * fac2 / fac;
+		  fft_sGrid[ip][1] = fft_Grid[ip][1] * win * fac2 / fac;
    }
  
   MPI_Allreduce(&Norm_local, &Normalization, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
@@ -103,7 +98,8 @@ void smooth(void)
 
   if(ThisTask == 0)
       printf("FFT backwards\n");
-  rfftwnd_mpi(fft_inverse_plan, 1, sGrid, workspace, FFTW_TRANSPOSED_ORDER);
+  fftw_execute(local_inv_plan);
+  fftw_destroy_plan(local_inv_plan);
 
 }
 

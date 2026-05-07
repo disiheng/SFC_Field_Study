@@ -44,11 +44,8 @@ MPICHINC =
 HDF5LIB  =
 endif
 
-ifeq (DOUBLEPRECISION_FFTW,$(findstring DOUBLEPRECISION_FFTW,$(OPT)))
-  FFTW_LIB = $(FFTW_LIBS) -ldrfftw_mpi -ldfftw_mpi -ldrfftw -ldfftw
-else
-  FFTW_LIB = $(FFTW_LIBS) -lsrfftw_mpi -lsfftw_mpi -lsrfftw -lsfftw
-endif
+# FFTW3: link fftw3_mpi + fftw3 (double precision)
+FFTW_LIB = $(FFTW_LIBS) -lfftw3_mpi -lfftw3
 
 LIBS   =  $(GSL_LIBS) -lgsl -lgslcblas $(FFTW_LIB) -lm -g
 

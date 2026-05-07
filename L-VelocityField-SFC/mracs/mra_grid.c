@@ -4,15 +4,9 @@
 #include <string.h>
 #include <math.h>
 
-#ifdef NOTYPEPREFIX_FFTW
-#include <rfftw_mpi.h>
-#else
-#ifdef DOUBLEPRECISION_FFTW
-#include <drfftw_mpi.h>
-#else
-#include <srfftw_mpi.h>
-#endif
-#endif
+/* FFTW3-MPI is included via allvars.h equivalent; mra_grid is standalone MPI.
+ * Include explicitly for plan creation functions. */
+#include <fftw3-mpi.h>
 
 #include "mra_grid.h"
 #include "sfc.h"
@@ -63,9 +57,9 @@ int mra_grid_build(const Particle *particles, long long n,
 int mra_grid_convolve(MRAGrid *grid, WaveletConfig *wav,
                       KernelType kernel_type, double radius, double theta)
 {
-    rfftwnd_mpi_plan fwd_plan, inv_plan;
-    int local_nx, local_x_start, local_ny, local_y_start, total_local_size;
-    fftw_real *workspace;
+    fftw_plan fwd_plan, inv_plan;
+    ptrdiff_t local_n0, local_0_start, local_n1, local_1_start;
+    ptrdiff_t alloc_local;
     int ngrid, ngrid_half;
     double delk, boxsize;
     long long i;
@@ -80,40 +74,51 @@ int mra_grid_convolve(MRAGrid *grid, WaveletConfig *wav,
     boxsize = grid->boxsize;
     delk = 2.0 * M_PI / boxsize;
 
-    /* Create FFTW plans for MRA grid dimensions */
-    fwd_plan = rfftw3d_mpi_create_plan(MPI_COMM_WORLD,
-                         ngrid, ngrid, ngrid,
-                         FFTW_REAL_TO_COMPLEX,
-                         FFTW_ESTIMATE | FFTW_IN_PLACE);
+    /* FFTW3 MPI: create plans bound to grid->density buffer.
+     * In-place: same pointer for in and out; FFTW3 handles the sizing.
+     * Reallocate density to hold complex output (which is larger). */
+    alloc_local = fftw_mpi_local_size_3d_transposed(
+        (ptrdiff_t) ngrid, (ptrdiff_t) ngrid, (ptrdiff_t) ngrid,
+        MPI_COMM_WORLD,
+        &local_n0, &local_0_start, &local_n1, &local_1_start);
 
-    inv_plan = rfftw3d_mpi_create_plan(MPI_COMM_WORLD,
-                         ngrid, ngrid, ngrid,
-                         FFTW_COMPLEX_TO_REAL,
-                         FFTW_ESTIMATE | FFTW_IN_PLACE);
+    /* Ensure buffer is large enough for complex output (in-place) */
+    size_t cplx_bytes = (size_t) alloc_local * sizeof(fftw_complex);
+    size_t real_bytes = (size_t) local_n0 * (size_t) ngrid * (size_t) ngrid
+                        * sizeof(double);
+    size_t need_bytes = (cplx_bytes > real_bytes) ? cplx_bytes : real_bytes;
+    size_t have_bytes = (size_t) grid->grid_num * sizeof(double);
 
-    rfftwnd_mpi_local_sizes(fwd_plan, &local_nx, &local_x_start,
-                            &local_ny, &local_y_start, &total_local_size);
-
-    /* Allocate workspace for FFTW transpose */
-    workspace = (fftw_real *) malloc(total_local_size * sizeof(fftw_real));
-    if (!workspace) {
-        rfftwnd_mpi_destroy_plan(fwd_plan);
-        rfftwnd_mpi_destroy_plan(inv_plan);
-        return -1;
+    if (have_bytes < need_bytes) {
+        double *newbuf = (double *) realloc(grid->density, need_bytes);
+        if (!newbuf) return -1;
+        grid->density = newbuf;
     }
 
-    /* Forward FFT: real -> complex (in-place) */
-    rfftwnd_mpi(fwd_plan, 1, grid->density, workspace, FFTW_TRANSPOSED_ORDER);
+    fwd_plan = fftw_mpi_plan_dft_r2c_3d(
+        (ptrdiff_t) ngrid, (ptrdiff_t) ngrid, (ptrdiff_t) ngrid,
+        grid->density, (fftw_complex *) grid->density,
+        MPI_COMM_WORLD, FFTW_ESTIMATE);
 
-    /* After forward FFT, data is in half-complex format:
-     * For each y in [local_y_start, local_y_start + local_ny):
+    inv_plan = fftw_mpi_plan_dft_c2r_3d(
+        (ptrdiff_t) ngrid, (ptrdiff_t) ngrid, (ptrdiff_t) ngrid,
+        (fftw_complex *) grid->density, grid->density,
+        MPI_COMM_WORLD, FFTW_ESTIMATE);
+
+    /* Forward FFT: real -> complex (in-place) */
+    fftw_execute(fwd_plan);
+
+    /* After forward FFT, data is in transposed half-complex format:
+     * For each y in [local_1_start, local_1_start + local_n1):
      *   For each x in [0, ngrid):
      *     For each z in [0, ngrid/2 + 1):
-     *       complex value at ip = ngrid*(ngrid_half+1)*y_local + (ngrid_half+1)*x + z
+     *       complex value at offset = y_local * ngrid*(ngrid_half+1) + x*(ngrid_half+1) + z
      */
     fftw_complex *fdata = (fftw_complex *) grid->density;
+    ptrdiff_t ly_start = local_1_start;
+    ptrdiff_t ly_count = local_n1;
 
-    for (y = local_y_start; y < local_y_start + local_ny; y++) {
+    for (y = (int) ly_start; y < (int)(ly_start + ly_count); y++) {
         int yy = (y > ngrid_half) ? y - ngrid : y;
 
         for (x = 0; x < ngrid; x++) {
@@ -126,44 +131,42 @@ int mra_grid_convolve(MRAGrid *grid, WaveletConfig *wav,
                 ky = yy * delk;
                 kz = zz * delk;
 
-                ip = (y - local_y_start) * ngrid * (ngrid_half + 1)
-                   + x * (ngrid_half + 1) + z;
+                ip = (int)(((ptrdiff_t)(y - (int) ly_start)) * (ptrdiff_t) ngrid
+                     * (ptrdiff_t)(ngrid_half + 1)
+                     + (ptrdiff_t) x * (ptrdiff_t)(ngrid_half + 1)
+                     + (ptrdiff_t) z);
 
                 /* Evaluate window kernel in k-space */
                 double window = kernel_eval(kernel_type, radius, theta, kx, ky, kz);
 
                 /* Apply wavelet phi filter if configured */
                 if (wav && wav->phi && wav->phi_len > 0) {
-                    /* Evaluate phi in k-space: FFT of scaling function.
-                     * For simplicity, use the scaling function's Fourier transform
-                     * approximated at the k-magnitude.
-                     * Full implementation needs phi's k-space representation. */
                     double kmag = sqrt(kx * kx + ky * ky + kz * kz);
-                    double phi_k = 1.0;  /* placeholder — phi k-space eval deferred */
+                    double phi_k = 1.0;
                     window *= phi_k;
-                    (void) kmag;  /* suppress unused warning */
+                    (void) kmag;
                 }
 
-                fdata[ip].re *= window;
-                fdata[ip].im *= window;
+                fdata[ip][0] *= window;
+                fdata[ip][1] *= window;
             }
         }
     }
 
     /* Inverse FFT: complex -> real (in-place) */
-    rfftwnd_mpi(inv_plan, 1, grid->density, workspace, FFTW_TRANSPOSED_ORDER);
+    fftw_execute(inv_plan);
 
     /* Normalize: FFTW unnormalized inverse gives ngrid^3 * original */
     norm_factor = 1.0 / CUB((double) ngrid);
-    long long nlocal = (long long) local_nx * ngrid * ngrid;
+    long long nlocal = (long long) local_n0 * (long long) ngrid
+                       * (long long) ngrid;
     for (i = 0; i < nlocal; i++) {
         grid->density[i] *= norm_factor;
     }
 
     /* Clean up */
-    free(workspace);
-    rfftwnd_mpi_destroy_plan(fwd_plan);
-    rfftwnd_mpi_destroy_plan(inv_plan);
+    fftw_destroy_plan(fwd_plan);
+    fftw_destroy_plan(inv_plan);
 
     return 0;
 }
