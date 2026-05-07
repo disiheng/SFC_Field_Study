@@ -94,15 +94,15 @@ void bispectrum_fft(fftw_complex *grid, int ngrid, double boxsize,
                             bin = (int)((k1 - k_min) / dk);
                             if (bin >= 0 && bin < nbins) {
                                 p1_out[bin].n++;
-                                p1_out[bin].data += grid[ip1].re * grid[ip1].re
-                                                  + grid[ip1].im * grid[ip1].im;
+                                p1_out[bin].data += grid[ip1][0] * grid[ip1][0]
+                                                  + grid[ip1][1] * grid[ip1][1];
                             }
 
                             bin = (int)((k2 - k_min) / dk);
                             if (bin >= 0 && bin < nbins) {
                                 p2_out[bin].n++;
-                                p2_out[bin].data += grid[ip2].re * grid[ip2].re
-                                                  + grid[ip2].im * grid[ip2].im;
+                                p2_out[bin].data += grid[ip2][0] * grid[ip2][0]
+                                                  + grid[ip2][1] * grid[ip2][1];
                             }
 
                             /* Bispectrum: Re[delta(k1)*delta(k2)*conj(delta(k1+k2))]
@@ -110,8 +110,8 @@ void bispectrum_fft(fftw_complex *grid, int ngrid, double boxsize,
                              * Approximate contribution to bispectrum bin by |k3|. */
                             bin = (int)((k3 - k_min) / dk);
                             if (bin >= 0 && bin < nbins) {
-                                double d1r = grid[ip1].re, d1i = grid[ip1].im;
-                                double d2r = grid[ip2].re, d2i = grid[ip2].im;
+                                double d1r = grid[ip1][0], d1i = grid[ip1][1];
+                                double d2r = grid[ip2][0], d2i = grid[ip2][1];
                                 double bispec = d1r * d2r - d1i * d2i;
                                 bispec_out[bin].n++;
                                 bispec_out[bin].data += bispec;
