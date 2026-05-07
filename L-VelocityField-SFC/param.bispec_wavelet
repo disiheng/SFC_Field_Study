@@ -1,0 +1,16 @@
+% L-VelocityField-SFC parameter file — bispectrum_wavelet mode
+% Run: mpirun -np 64 L-VelHalo-MXXL param.bispec_wavelet 0
+
+Mode            bispec_wavelet
+SimulationDir   /data0/Millennium/croton_etal/croton_etal.ugriz.bin
+BoxSize         500.0
+Smoothing       5.0
+Time            1.0
+Omega0          0.25
+OutputDir       ./output/
+FileNameBase    mxxl
+MaxMemSize      4000
+NFiles          64
+Ndim            512
+CYCLES          0
+NumFilesWrittenInParallel 1

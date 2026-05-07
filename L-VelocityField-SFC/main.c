@@ -68,6 +68,15 @@ int main(int argc, char **argv)
       mra_grid_build(particles, npart, 1ULL << 9, BoxSize, &mgrid);
       if (ThisTask == 0) printf("Built MRA grid: %llu cells\n", mgrid.grid_num);
 
+      /* Convolve with Gaussian kernel */
+      WaveletConfig wav_cfg;
+      wav_cfg.resolution = 9;
+      wav_cfg.base_type = 0;
+      wav_cfg.phi = NULL;
+      wav_cfg.phi_len = 0;
+      mra_grid_convolve(&mgrid, &wav_cfg, KERNEL_GAUSSIAN, Smoothing, 0.0);
+      if (ThisTask == 0) printf("Convolved with Gaussian kernel (R=%g)\n", Smoothing);
+
       mra_grid_write(&mgrid, "mra_density.dat");
       if (ThisTask == 0) printf("Wrote MRA density to mra_density.dat\n");
 
@@ -89,14 +98,94 @@ int main(int argc, char **argv)
 
   if (strcmp(Mode, "bispec_wavelet") == 0) {
       if (ThisTask == 0) printf("Mode: wavelet bispectrum\n");
-      if (ThisTask == 0) printf("bispec_wavelet mode not yet integrated\n");
+
+      Particle *particles = NULL;
+      long long npart;
+      npart = read_millennium_galaxies(SimulationDir, &particles, 1);
+      if (npart <= 0) {
+          if (ThisTask == 0) printf("Failed to read particles\n");
+          MPI_Finalize();
+          return 1;
+      }
+
+      MRAGrid mgrid;
+      WaveletConfig wav_cfg;
+      wav_cfg.resolution = 8;
+      wav_cfg.base_type = 0;
+      wav_cfg.phi = NULL;
+      wav_cfg.phi_len = 0;
+
+      mra_grid_build(particles, npart, 1ULL << 8, BoxSize, &mgrid);
+
+      int nbins = 20;
+      Result *bispec = (Result *) malloc(nbins * sizeof(Result));
+      bispectrum_wavelet(&mgrid, &wav_cfg, KERNEL_GAUSSIAN, Smoothing, nbins, bispec);
+
+      if (ThisTask == 0) {
+          char fname[256];
+          snprintf(fname, sizeof(fname), "%s_bispec_wavelet.dat", OutputDir);
+          FILE *fp = fopen(fname, "w");
+          if (fp) {
+              int i;
+              for (i = 0; i < nbins; i++) {
+                  fprintf(fp, "%g %g %lld\n",
+                          bispec[i].x, bispec[i].data, bispec[i].n);
+              }
+              fclose(fp);
+              printf("Wrote wavelet bispectrum to %s\n", fname);
+          }
+      }
+
+      free(bispec);
+      free_particles(particles);
+      mra_grid_free(&mgrid);
+      if (ThisTask == 0) printf("Done (bispec_wavelet mode)\n");
       MPI_Finalize();
       return 0;
   }
 
   if (strcmp(Mode, "three_pcf") == 0) {
       if (ThisTask == 0) printf("Mode: 3-point correlation function\n");
-      if (ThisTask == 0) printf("three_pcf mode not yet integrated\n");
+
+      Particle *particles = NULL;
+      long long npart;
+      npart = read_millennium_galaxies(SimulationDir, &particles, 1);
+      if (npart <= 0) {
+          if (ThisTask == 0) printf("Failed to read particles\n");
+          MPI_Finalize();
+          return 1;
+      }
+      if (ThisTask == 0) printf("Read %lld particles\n", npart);
+
+      WaveletConfig wav_cfg;
+      wav_cfg.resolution = 8;
+      wav_cfg.base_type = 0;
+      wav_cfg.phi = NULL;
+      wav_cfg.phi_len = 0;
+
+      int nbins_r = 15;
+      Result *tcf = (Result *) malloc(nbins_r * sizeof(Result));
+      three_pcf(particles, npart, &wav_cfg, KERNEL_GAUSSIAN,
+                Smoothing, BoxSize, nbins_r, tcf);
+
+      if (ThisTask == 0) {
+          char fname[256];
+          snprintf(fname, sizeof(fname), "%s_three_pcf.dat", OutputDir);
+          FILE *fp = fopen(fname, "w");
+          if (fp) {
+              int i;
+              for (i = 0; i < nbins_r; i++) {
+                  fprintf(fp, "%g %g %lld\n",
+                          tcf[i].x, tcf[i].data, tcf[i].n);
+              }
+              fclose(fp);
+              printf("Wrote 3PCF to %s\n", fname);
+          }
+      }
+
+      free(tcf);
+      free_particles(particles);
+      if (ThisTask == 0) printf("Done (three_pcf mode)\n");
       MPI_Finalize();
       return 0;
   }
