@@ -122,11 +122,6 @@ extern char FileNameBase[512];
 extern int  LastSnapShotNr;
 extern int  MaxMemSize;
 
-extern size_t AllocatedBytes;
-extern size_t HighMarkBytes;
-extern float HighMarkBytes_Step;
-extern size_t FreeBytes;
-
 #define SET_MASK(m, n) ( ((((unsigned long long)1) << m)-1) << n )
 #define IMIN(a,b) ((a<b)?a:b)
 
@@ -136,16 +131,7 @@ extern size_t FreeBytes;
 
 #define  terminate(x) {char __buf[1000]; sprintf(__buf, "code termination on task=%d, function '%s()', file '%s', line %d: '%s'\n", ThisTask, __FUNCTION__, __FILE__, __LINE__, x); printf(__buf); fflush(stdout);                           MPI_Abort(MPI_COMM_WORLD, 1); exit(0);}
 
-#define  mymalloc(x, y)            mymalloc_fullinfo(x, y, __FUNCTION__, __FILE__, __LINE__)
-#define  mymalloc_movable(x, y, z) mymalloc_movable_fullinfo(x, y, z, __FUNCTION__, __FILE__, __LINE__)
-
-#define  myrealloc(x, y)           myrealloc_fullinfo(x, y, __FUNCTION__, __FILE__, __LINE__)
-#define  myrealloc_movable(x, y)   myrealloc_movable_fullinfo(x, y, __FUNCTION__, __FILE__, __LINE__)
-
-#define  myfree(x)                 myfree_fullinfo(x, __FUNCTION__, __FILE__, __LINE__)
-#define  myfree_movable(x)         myfree_movable_fullinfo(x, __FUNCTION__, __FILE__, __LINE__)
-
-#define  report_memory_usage(x, y) report_detailed_memory_usage_of_largest_task(x, y, __FUNCTION__, __FILE__, __LINE__)
+#include "mymalloc.h"
 
 
 #endif

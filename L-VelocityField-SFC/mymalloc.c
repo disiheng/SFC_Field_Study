@@ -11,6 +11,7 @@
 
 #include "allvars.h"
 #include "proto.h"
+#include "mymalloc.h"
 
 
 #define MAXBLOCKS 500

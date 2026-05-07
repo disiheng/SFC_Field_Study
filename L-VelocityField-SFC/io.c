@@ -16,6 +16,7 @@
 #endif
 #include "allvars.h"
 #include "proto.h"
+#include "io.h"
 
 
 void MSG(const char *format, time_t t0, ...)
