@@ -8,10 +8,6 @@
 #include <sys/resource.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <unistd.h>
-#include <signal.h>
-#include <assert.h>
-
 #include "allvars.h"
 #include "proto.h"
 #include "statistics/stats_utils.h"

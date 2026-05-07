@@ -14,6 +14,7 @@
 
 #include "allvars.h"
 #include "proto.h"
+#include "field_assign.h"
 
 
 void density(Particle * P, fftw_real *grid, long long NumPart, int mode, int value)

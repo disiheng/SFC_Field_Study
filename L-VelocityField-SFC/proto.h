@@ -13,8 +13,6 @@ void load_grid_field(int value);
 void load_catalogue(void);
 void load_snapshot(void);
 void load_halo_catalogue_single(int FileNr);
-void density(Particle * P, fftw_real *grid, long long NumPart, int mode, int value);
-void mapping(Particle * P, fftw_real *grid, long long FirstPart, long long NumPart, int mode, int value);
 void init_grid(void);
 void clean_grid(void);
 
