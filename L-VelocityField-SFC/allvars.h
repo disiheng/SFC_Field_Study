@@ -2,6 +2,7 @@
 #define ALLVARS_H
 
 #include <stdio.h>
+#include <stdlib.h>
 
 #ifdef NOTYPEPREFIX_FFTW
 #include      <rfftw_mpi.h>
@@ -35,8 +36,6 @@ typedef unsigned int MyIDType;
 typedef unsigned long long MyIDType;
 #endif
 
-#define dbg1 0
-#define dbg2 0
 
 extern time_t t0;
 
@@ -121,12 +120,6 @@ extern char FileNameBase[512];
 
 extern int  LastSnapShotNr;
 extern int  MaxMemSize;
-
-#define SET_MASK(m, n) ( ((((unsigned long long)1) << m)-1) << n )
-#define IMIN(a,b) ((a<b)?a:b)
-
-#define  BITS_PER_DIMENSION 10  /* for Peano-Hilbert order. Note: Maximum is 10 to fit in 32-bit integer ! */
-#define  PEANOCELLS (((peanokey)1)<<(3*BITS_PER_DIMENSION))
 
 
 #define  terminate(x) {char __buf[1000]; sprintf(__buf, "code termination on task=%d, function '%s()', file '%s', line %d: '%s'\n", ThisTask, __FUNCTION__, __FILE__, __LINE__, x); printf(__buf); fflush(stdout);                           MPI_Abort(MPI_COMM_WORLD, 1); exit(0);}
