@@ -53,10 +53,13 @@ extern size_t HighMark_run;
 extern int NumFilesWrittenInParallel;
 extern int CYCLES;
 
+#ifndef PARTICLE_TYPEDEF_DONE
 typedef struct Particle_ {
   float pos[3];
   float vel[3];
 } Particle;
+#define PARTICLE_TYPEDEF_DONE
+#endif
 
 typedef struct
 { 

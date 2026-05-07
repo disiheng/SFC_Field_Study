@@ -1,6 +1,8 @@
 #ifndef SRFFTW_MPI_H
 #define SRFFTW_MPI_H
 
+#include <time.h>
+
 /* Stub for single-precision FFTW MPI header.
  * Replace with real FFTW installation for full compilation. */
 #define SEND_TYPE MPI_FLOAT

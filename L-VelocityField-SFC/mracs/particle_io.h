@@ -4,10 +4,13 @@
 #include <stdint.h>
 
 /* Particle with position and weight */
+#ifndef PARTICLE_TYPEDEF_DONE
 typedef struct {
     double x, y, z;
     double weight;
 } Particle;
+#define PARTICLE_TYPEDEF_DONE
+#endif
 
 /* Millennium Run galaxy (23 float fields in binary) */
 typedef struct {
