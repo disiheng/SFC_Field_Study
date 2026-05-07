@@ -7,7 +7,10 @@
       "Bash(git commit *)",
       "Bash(gcc -std=c99 -Wall -o test_particle_io particle_io.c test_particle_io.c -lm)",
       "Bash(./test_particle_io)",
-      "Bash(cc -std=c99 -Wall -o test_particle_io particle_io.c test_particle_io.c)"
+      "Bash(cc -std=c99 -Wall -o test_particle_io particle_io.c test_particle_io.c)",
+      "Bash(gcc -std=c99 -Wall -c kernel.c -o kernel.o)",
+      "Bash(gcc -std=c99 -Wall -c sfc.c -o sfc.o)",
+      "Bash(gcc -std=c99 -Wall -c wavelet.c -o wavelet.o)"
     ]
   }
 }
