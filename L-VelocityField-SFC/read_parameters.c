@@ -52,6 +52,10 @@ void read_parameter_file(char *fname)
   addr[nt] = FileNameBase;
   id[nt++] = STRING;
 
+  strcpy(tag[nt], "Mode");
+  addr[nt] = Mode;
+  id[nt++] = STRING;
+
   strcpy(tag[nt], "MaxMemSize");
   addr[nt] = &MaxMemSize;
   id[nt++] = INT;

@@ -11,6 +11,12 @@
 #include "allvars.h"
 #include "proto.h"
 #include "statistics/stats_utils.h"
+#include "mracs/particle_io.h"
+#include "mracs/mra_grid.h"
+#include "mracs/wavelet.h"
+#include "statistics/bispectrum_fft.h"
+#include "statistics/bispectrum_wavelet.h"
+#include "statistics/three_pcf.h"
 
 #ifdef NOTYPEPREFIX_FFTW
 #include      <rfftw_mpi.h>
@@ -42,6 +48,59 @@ int main(int argc, char **argv)
     }
 
   read_parameter_file(argv[1]);
+
+  /* Mode-based dispatch for new pipelines */
+  if (strcmp(Mode, "paircount") == 0) {
+      if (ThisTask == 0) printf("Mode: MRA pair-counting\n");
+
+      Particle *particles = NULL;
+      long long npart;
+      MRAGrid mgrid;
+
+      npart = read_millennium_galaxies(SimulationDir, &particles, 1);
+      if (npart <= 0) {
+          if (ThisTask == 0) printf("Failed to read particles from %s\n", SimulationDir);
+          MPI_Finalize();
+          return 1;
+      }
+      if (ThisTask == 0) printf("Read %lld particles\n", npart);
+
+      mra_grid_build(particles, npart, 1ULL << 9, BoxSize, &mgrid);
+      if (ThisTask == 0) printf("Built MRA grid: %llu cells\n", mgrid.grid_num);
+
+      mra_grid_write(&mgrid, "mra_density.dat");
+      if (ThisTask == 0) printf("Wrote MRA density to mra_density.dat\n");
+
+      free_particles(particles);
+      mra_grid_free(&mgrid);
+
+      if (ThisTask == 0) printf("Done (paircount mode)\n");
+      MPI_Finalize();
+      return 0;
+  }
+
+  if (strcmp(Mode, "bispec") == 0) {
+      if (ThisTask == 0) printf("Mode: FFT bispectrum\n");
+      /* Deferred to integration phase -- loads grid, does FFT, calls bispectrum_fft */
+      if (ThisTask == 0) printf("bispec mode not yet integrated\n");
+      MPI_Finalize();
+      return 0;
+  }
+
+  if (strcmp(Mode, "bispec_wavelet") == 0) {
+      if (ThisTask == 0) printf("Mode: wavelet bispectrum\n");
+      if (ThisTask == 0) printf("bispec_wavelet mode not yet integrated\n");
+      MPI_Finalize();
+      return 0;
+  }
+
+  if (strcmp(Mode, "three_pcf") == 0) {
+      if (ThisTask == 0) printf("Mode: 3-point correlation function\n");
+      if (ThisTask == 0) printf("three_pcf mode not yet integrated\n");
+      MPI_Finalize();
+      return 0;
+  }
+
   SnapshotNum = atoi(argv[2]);
 
   HighMark_run = 0;

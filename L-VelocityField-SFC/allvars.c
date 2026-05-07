@@ -6,6 +6,7 @@ time_t t0;
 char OutputDir[512];
 char SimulationDir[512];
 char FileNameBase[512];
+char Mode[64];
 
 int LastSnapShotNr, Dim;
 

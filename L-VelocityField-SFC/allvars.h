@@ -120,6 +120,7 @@ extern int LocNgroups;
 extern char OutputDir[512];
 extern char SimulationDir[512];
 extern char FileNameBase[512];
+extern char Mode[64];
 
 extern int  LastSnapShotNr;
 extern int  MaxMemSize;
