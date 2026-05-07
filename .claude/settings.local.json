@@ -4,7 +4,10 @@
       "Bash(git init *)",
       "Bash(git config *)",
       "Bash(git add *)",
-      "Bash(git commit *)"
+      "Bash(git commit *)",
+      "Bash(gcc -std=c99 -Wall -o test_particle_io particle_io.c test_particle_io.c -lm)",
+      "Bash(./test_particle_io)",
+      "Bash(cc -std=c99 -Wall -o test_particle_io particle_io.c test_particle_io.c)"
     ]
   }
 }
