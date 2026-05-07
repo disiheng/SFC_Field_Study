@@ -1,7 +1,8 @@
 
-#ifndef ALLVARS_H
+#ifndef PROTO_H
+#define PROTO_H
+
 #include "allvars.h"
-#endif
 
 double density_statistics(fftw_real *grid);
 double log_density( float *grid);
@@ -47,5 +48,5 @@ void ERR(  const char* format, ... ) ;
 void DBG0( const char* format, int mydbg, time_t t0, int task, ... );
 void DBG(  const char* format, int mydbg, time_t t0, ... ) ;
 
-
+#endif
 
