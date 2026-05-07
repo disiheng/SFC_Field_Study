@@ -11,7 +11,7 @@ int daubechies_load(const char *datadir, int genus, WaveletConfig *cfg)
     int phi_start = 0;
     int phi_end = 2 * genus - 1;
     int phi_support = phi_end - phi_start;
-    int nsamp, i;
+    int nsamp;
 
     snprintf(fname, sizeof(fname), "%s/DaubechiesG%dPhi.bin", datadir, genus);
 
